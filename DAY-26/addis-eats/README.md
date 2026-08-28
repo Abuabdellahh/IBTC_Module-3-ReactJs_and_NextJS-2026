@@ -151,6 +151,9 @@ Adding a dish means adding one object to `src/data/menu.js`. No JSX changes.
   container's Linux-built dependencies instead of an empty host folder.
 - **`prod`** sits behind the `prod` profile, so a plain `docker compose up`
   never starts it.
+- **`name: addis-eats-day26`** pins the Compose project name. Every day's folder
+  is called `addis-eats`, and Compose otherwise derives the project name from
+  the directory — so the days would share networks and images.
 
 Two details worth knowing:
 
