@@ -1,0 +1,122 @@
+:root {
+  --bg: #14100d;
+  --surface: #1e1813;
+  --border: #33291f;
+  --text: #f4ece2;
+  --muted: #a99a88;
+  --faint: #7c705f;
+  --accent: #e0913b;
+
+  color-scheme: dark;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.app {
+  width: 100%;
+  max-width: 40rem;
+}
+
+/* ---------- Header ---------- */
+.header {
+  text-align: center;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.header__title {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 2.75rem;
+  letter-spacing: -0.02em;
+}
+
+.header__tagline {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ---------- Menu ---------- */
+.menu__heading {
+  margin: 2.5rem 0 1rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* ---------- Dish ---------- */
+.dish {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.dish__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.dish__name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.dish__dots {
+  flex: 1;
+  border-bottom: 1px dotted var(--border);
+}
+
+.dish__price {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.dish__description {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--faint);
+}

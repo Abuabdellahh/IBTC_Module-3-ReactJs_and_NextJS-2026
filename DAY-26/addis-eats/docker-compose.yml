@@ -1,0 +1,27 @@
+services:
+  # Development: hot-reloading Vite server on http://localhost:5173
+  web:
+    build:
+      context: .
+      target: dev
+    container_name: addis-eats-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount the source for live reload, but keep the image's node_modules.
+      # ":z" relabels the mount for SELinux hosts (Fedora/RHEL); harmless elsewhere.
+      - .:/app:z
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+  # Production preview: static build behind nginx on http://localhost:8086
+  # Started only on demand: docker compose --profile prod up prod
+  prod:
+    build:
+      context: .
+      target: prod
+    container_name: addis-eats-prod
+    ports:
+      - "8086:80"
+    profiles: ["prod"]
