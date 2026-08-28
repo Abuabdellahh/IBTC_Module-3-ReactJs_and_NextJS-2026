@@ -1,0 +1,410 @@
+:root {
+  --bg: #14100d;
+  --surface: #1e1813;
+  --border: #33291f;
+  --text: #f4ece2;
+  --muted: #a99a88;
+  --faint: #7c705f;
+  --accent: #e0913b;
+  --heat: #f08a6c;
+
+  color-scheme: dark;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.app {
+  width: 100%;
+  max-width: 40rem;
+}
+
+/* ---------- Card: the shared surface every wrapped block sits on ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+/* ---------- Header ---------- */
+.header {
+  text-align: center;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.header__title {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 2.75rem;
+  letter-spacing: -0.02em;
+}
+
+.header__tagline {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ---------- Category chips ---------- */
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2rem 0 1.25rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  font: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.chip:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.chip--selected {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.switch input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ---------- Menu list ---------- */
+.menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* ---------- Dish ---------- */
+.dish__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.dish__name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.dish__dots {
+  flex: 1;
+  border-bottom: 1px dotted var(--border);
+}
+
+.dish__price {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dish__description {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.badge {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(214, 69, 47, 0.15);
+  border: 1px solid rgba(214, 69, 47, 0.45);
+  color: var(--heat);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* ---------- Empty state ---------- */
+.empty {
+  text-align: center;
+  padding: 2.5rem 1.25rem;
+}
+
+.empty__message {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.empty__reset {
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+}
+
+.empty__reset:hover {
+  filter: brightness(1.1);
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--faint);
+}
+
+/* ---------- Dish: order controls ---------- */
+.dish--ordered {
+  border-color: rgba(224, 145, 59, 0.55);
+}
+
+.dish__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.dish__count {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.dish__add {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 1rem;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.dish__add:hover {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- Order summary ---------- */
+.summary {
+  position: sticky;
+  bottom: 1rem;
+  margin-top: 1.5rem;
+  border-color: var(--accent);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+}
+
+.summary__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.summary__label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.summary__total {
+  font-size: 1.35rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.summary__clear {
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0.5rem 0 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.summary__clear:hover {
+  color: var(--text);
+}
+
+/* ---------- Delivery form ---------- */
+.delivery {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+}
+
+.delivery__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.delivery__hint {
+  margin: 0.35rem 0 1.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.field__label {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field input,
+.field select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.field--invalid input,
+.field--invalid select {
+  border-color: var(--heat);
+}
+
+.field__error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--heat);
+}
+
+.delivery__submit {
+  font: inherit;
+  font-weight: 600;
+  width: 100%;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.delivery__submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.delivery__submit:disabled {
+  background: var(--border);
+  color: var(--faint);
+  cursor: not-allowed;
+}
+
+.delivery__blocked {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ---------- Receipt ---------- */
+.receipt {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-color: var(--accent);
+}
+
+.receipt__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+
+.receipt__body {
+  margin: 0 0 1.25rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.receipt__dismiss {
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 1.1rem;
+  cursor: pointer;
+}
