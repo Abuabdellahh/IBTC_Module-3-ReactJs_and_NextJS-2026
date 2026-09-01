@@ -408,3 +408,31 @@ body {
   padding: 0.4rem 1.1rem;
   cursor: pointer;
 }
+
+/* ---------- Search ---------- */
+.search {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- Loading / error status ---------- */
+.menu-status {
+  margin: 2rem 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.menu-status--error {
+  color: var(--heat);
+}

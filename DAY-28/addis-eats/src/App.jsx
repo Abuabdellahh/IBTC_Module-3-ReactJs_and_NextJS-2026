@@ -4,17 +4,14 @@ import Header from './components/Header'
 import Menu from './components/Menu'
 import OrderSummary from './components/OrderSummary'
 import Receipt from './components/Receipt'
-import { dishes } from './data/menu'
 
 const EMPTY_ORDER = { items: 0, total: 0 }
 
 export default function App() {
   const [order, setOrder] = useState(EMPTY_ORDER)
   const [receipt, setReceipt] = useState(null)
+  const [dishCount, setDishCount] = useState(0)
 
-  // Bumping this remounts <Menu />, which throws away every Dish's local
-  // `count`. A component's key is its identity: change the key and React
-  // builds a fresh one instead of reusing the old state.
   const [menuVersion, setMenuVersion] = useState(0)
 
   const addToOrder = (price) => {
@@ -36,10 +33,10 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header count={dishes.length} />
+      <Header count={dishCount} />
 
       <main>
-        <Menu key={menuVersion} onAdd={addToOrder} />
+        <Menu key={menuVersion} onAdd={addToOrder} onDishCount={setDishCount} />
 
         <OrderSummary items={order.items} total={order.total} onClear={clearOrder} />
 
