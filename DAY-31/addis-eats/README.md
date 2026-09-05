@@ -1,289 +1,141 @@
-# Addis Eats — Day 28
+# Addis Eats — Day 31
 
-State, props and events. The Day 27 menu was a display; this one takes an
-order.
+React Router. The Day 29 single-page app is split across real URLs: a shared
+layout, a menu page, a page per dish, the category filter in the query string,
+a cart that survives navigation, and a checkout behind a sign-in guard.
 
-- **`count` state in `Dish`** with an **Add** button
-- **category state lifted into `Menu`**, shared by `CategoryBar` and `DishList`
-- **category chips rendered from an array**, the selected one highlighted
-- **a running order total in ETB**
-- **a controlled TeleBirr delivery form** on one state object, with validation
-  that keeps the pay button disabled until the number is real
-
-Runs entirely in **Docker** — no Node.js or npm needed on your machine.
+- **`BrowserRouter` + route table in `App`** — every screen is a `<Route>`
+- **`Layout`** with header, nav and `<Outlet>` wraps every screen
+- **`/menu`** fetches dishes; category lives in `?category=` via `useSearchParams`
+- **`/menu/:id`** reads the id with `useParams` and shows one dish
+- **`/checkout`** is guarded by `RequireAuth` — unauthenticated users are sent
+  to `/signin` and returned after signing in
+- **`CartContext`** keeps the order alive across navigation
+- **`AuthContext`** holds the mock sign-in state
+- **`*`** catch-all renders a 404 page
 
 ---
 
 ## Quick start
 
 ```bash
-cd DAY-28/addis-eats
-docker compose up            # http://localhost:5175
+cd DAY-31/addis-eats
+npm install
+npm run dev          # http://localhost:5173
 ```
 
-Days 26 (5173) and 27 (5174) keep their ports, so all three can run at once.
-
-| Task                | Command                                          | URL                   |
-| ------------------- | ------------------------------------------------ | --------------------- |
-| Dev server (HMR)    | `docker compose up`                              | http://localhost:5175 |
-| Production (nginx)  | `docker compose --profile prod up --build prod`  | http://localhost:8088 |
-| **All checks**      | `docker compose run --rm web npm run check`      | —                     |
-| Lint                | `docker compose run --rm web npm run lint`       | —                     |
-| Stop everything     | `docker compose --profile prod down`             | —                     |
+| Task               | Command                                         | URL                   |
+| ------------------ | ----------------------------------------------- | --------------------- |
+| Dev server (HMR)   | `npm run dev`                                   | http://localhost:5173 |
+| Production build   | `npm run build`                                 | —                     |
+| Preview build      | `npm run preview`                               | http://localhost:4173 |
+| PropTypes check    | `npm run check:props`                           | —                     |
+| Phone check        | `npm run check:phone`                           | —                     |
+| All checks         | `npm run check`                                 | —                     |
 
 ---
 
-## Where state lives
+## Route table
 
 ```
-App                       order: { items, total }   ← shared by the whole page
-│                         receipt, menuVersion
-├── Header
-├── Menu                  category, spicyOnly       ← lifted: two children need it
-│   ├── CategoryBar       (none — controlled)
-│   └── DishList          (none — presentational)
-│       └── Dish          count                     ← nobody else's business
-├── OrderSummary          (none — reads the total)
-└── DeliveryForm          form: { name, phone, area }, touched
+/                   Landing         index route — welcome + CTA link to /menu
+/menu               MenuPage        dish list, category filter in query string
+/menu/:id           DishPage        single dish detail, Add to cart
+/checkout           CheckoutPage    guarded — requires sign-in
+/signin             SignIn          signs in and redirects back to intended page
+*                   NotFound        404 catch-all
 ```
 
-The rule this layout follows: **state belongs at the lowest node that still
-covers everyone who needs it.**
-
-- `count` is only ever read and changed by one dish, so it stays inside `Dish`.
-- `category` is set by `CategoryBar` and read by `DishList` — so it moves up to
-  their closest common parent, `Menu`. If each child kept its own copy they
-  could disagree about which chip is active.
-- `order.total` shows up in `OrderSummary` and gates `DeliveryForm`, both
-  outside `Menu` — so it lives in `App`.
+All routes are nested inside `Layout`, which renders the shared header, nav
+and `<Outlet />`.
 
 ---
 
-## 1. `count` state and the Add button
+## How the cart survives navigation
 
-`src/components/Dish.jsx`
+`CartContext` wraps the whole app in `main.jsx`. Any component can call
+`useCart()` to read `{ cart, addToCart, clearCart }` — the values never reset
+when the URL changes because the context lives above the router.
 
 ```jsx
-const [count, setCount] = useState(0)
+// main.jsx
+<BrowserRouter>
+  <AuthProvider>
+    <CartProvider>
+      <App />
+    </CartProvider>
+  </AuthProvider>
+</BrowserRouter>
+```
 
-const handleAdd = () => {
-  setCount((current) => current + 1)   // updater form, not count + 1
-  onAdd(price)                         // tell the parent so the total can move
+The nav badge updates live:
+
+```jsx
+<NavLink to="/checkout">
+  Checkout {cart.items > 0 && <span className="nav__badge">{cart.items}</span>}
+</NavLink>
+```
+
+---
+
+## Category filter in the query string
+
+`MenuPage` reads and writes `?category=` with `useSearchParams` instead of
+`useState`. The filter is now part of the URL — shareable, bookmarkable, and
+the browser back button works.
+
+```jsx
+const [searchParams, setSearchParams] = useSearchParams()
+const category = searchParams.get('category') ?? 'All'
+
+const setCategory = (value) => {
+  setSearchParams(value === 'All' ? {} : { category: value })
 }
 ```
 
-**Why `setCount(current => current + 1)` and not `setCount(count + 1)`?**
-`count` is a value captured when the component rendered. React batches updates,
-so two clicks in the same tick both read the same stale `count` and the second
-overwrites the first — you press Add twice and the number goes up by one. The
-updater form is handed the latest value, so it always composes.
-
-The dish keeps its own count *and* reports the price upward. That is a
-deliberate trade: two places track the order, and they only stay in step
-because `Dish` is the sole thing that adds. The moment you want to edit
-quantities from a cart, `count` has to be lifted into `App` alongside the
-total. `App` handles the one case that already crosses that line — **Clear
-order** — with a key:
-
-```jsx
-<Menu key={menuVersion} onAdd={addToOrder} />
-```
-
-Changing a component's key changes its **identity**: React discards the old
-tree and mounts a fresh one, so every `Dish` starts again at `count = 0`. It is
-the supported way to reset state you do not own.
+The fetch effect re-runs when `category` changes (it is in the dependency
+array), and the `AbortController` cleanup cancels the previous request.
 
 ---
 
-## 2. Lifting the category state
+## `menu/:id` and `useParams`
 
-`src/components/Menu.jsx` owns it; both children receive it as props.
+Each dish name in the list is a `<Link to={`/menu/${id}`}>`. `DishPage` reads
+the id and finds the matching dish:
 
 ```jsx
-const [category, setCategory] = useState('All')
+const { id } = useParams()
 
-<CategoryBar categories={categories} selected={category} onSelect={setCategory} … />
-<DishList dishes={visibleDishes} … />
+loadDishes(signal).then((all) => {
+  const found = all.find((d) => d.id === id)
+  if (!found) throw new Error(`No dish found with id "${id}"`)
+  setDish(found)
+})
 ```
-
-`CategoryBar` holds no state at all — it renders what it is told and calls
-`onSelect` on a click. **Data flows down, events flow up.**
-
-The visible list is derived on every render, never stored:
-
-```js
-const visibleDishes = useMemo(
-  () => dishes.filter((dish) => {
-    const matchesCategory = category === 'All' || dish.category === category
-    const matchesSpicy = !spicyOnly || dish.spicy === true
-    return matchesCategory && matchesSpicy
-  }),
-  [category, spicyOnly],
-)
-```
-
-A `filteredDishes` state would be a second source of truth that can drift out
-of sync. Recomputing cannot.
 
 ---
 
-## 3. Chips from an array
+## `RequireAuth` and the redirect-back pattern
 
 ```jsx
-{categories.map((category) => {
-  const isSelected = category === selected
-  return (
-    <button
-      key={category}
-      className={isSelected ? 'chip chip--selected' : 'chip'}
-      aria-pressed={isSelected}
-      onClick={() => onSelect(category)}
-    >
-      {category}
-    </button>
-  )
-})}
-```
+// RequireAuth.jsx
+const { user } = useAuth()
+const location = useLocation()
 
-The highlight is derived from state, not toggled by hand — there is no
-`activeChip` to forget to clear, so two chips can never look selected at once.
-`aria-pressed` carries the same fact to screen readers, which a CSS class alone
-does not.
-
-The array itself comes from the data (`src/data/menu.js`):
-
-```js
-export const categories = ['All', ...new Set(dishes.map((d) => d.category))]
-```
-
-Add a dish in a new category and its chip appears. No JSX changes.
-
----
-
-## 4. The running total
-
-`App` keeps one object so the two numbers move together:
-
-```jsx
-const [order, setOrder] = useState({ items: 0, total: 0 })
-
-const addToOrder = (price) => {
-  setOrder((current) => ({
-    items: current.items + 1,
-    total: current.total + price,
-  }))
+if (!user) {
+  return <Navigate to="/signin" state={{ from: location }} replace />
 }
+return children
 ```
 
-A **new object** every time — mutating `current.total` in place would leave the
-reference unchanged, React would compare old and new, see the same object, and
-skip the re-render.
-
-Formatting lives in `src/lib/format.js`, so "1,220.00 ETB" is written once:
-
-```js
-export function formatEtb(amount) {
-  return `${amount.toLocaleString('en-ET', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB`
-}
-```
-
----
-
-## 5 & 6. The controlled TeleBirr form
-
-`src/components/DeliveryForm.jsx` — three fields, **one** state object, **one**
-change handler:
+`SignIn` reads `location.state.from` and navigates there after a successful
+sign-in, so the user lands exactly where they were trying to go:
 
 ```jsx
-const [form, setForm] = useState({ name: '', phone: '', area: '' })
-
-const handleChange = (event) => {
-  const { name, value } = event.target
-  setForm((current) => ({ ...current, [name]: value }))
-}
+const from = location.state?.from?.pathname ?? '/menu'
+signIn(name.trim())
+navigate(from, { replace: true })
 ```
-
-The computed key `[name]` matches each input's `name` attribute, so a fourth
-field needs no fourth `useState` and no fourth handler. Every input is
-**controlled** — `value={form.phone}` plus `onChange` — so React state is the
-single source of truth and the DOM only ever mirrors it.
-
-Validation is a plain function outside the component, so it can be read and
-tested on its own, and there is no `errors` state to fall out of date:
-
-```js
-function validate({ name, phone, area }) { … }
-
-const errors = validate(form)          // recomputed every render
-const isValid = Object.keys(errors).length === 0
-```
-
-```jsx
-<button type="submit" disabled={!isValid || !hasOrder}>Pay with TeleBirr</button>
-```
-
-Three details that matter more than the regex:
-
-- **Errors appear on blur, not while typing.** A `touched` map records which
-  fields the user has left, so `09` is not screamed at halfway through a phone
-  number.
-- **The disabled button explains itself.** "Add a dish to the order first" —
-  a dead control with no reason is a dead end.
-- **`noValidate`** hands validation to React rather than letting the browser
-  fight it with its own bubbles.
-
-### The number rule — `src/lib/telebirr.js`
-
-```js
-const TELEBIRR_PATTERN = /^(?:\+?251|0)([97]\d{8})$/
-```
-
-Ethiopian mobile numbers are 9 digits after the country code and begin with 9
-or 7. Spaces, dashes and brackets are stripped first, so `0912 345 678`,
-`091-234-5678`, `+251912345678` and `251912345678` are all the same subscriber
-— **normalise input, do not demand a format.** `toInternational()` returns the
-canonical `+2519…` form that gets submitted; the raw text never leaves the
-input.
-
----
-
-## Verifying it
-
-Three check scripts, no test framework:
-
-```bash
-docker compose run --rm web npm run check
-```
-
-| Script                        | What it proves                                              |
-| ----------------------------- | ----------------------------------------------------------- |
-| `check:props`                 | `<App />` renders with zero PropTypes warnings, and deliberately invalid props *do* warn |
-| `check:phone`                 | 6 valid TeleBirr formats accepted, 7 invalid rejected, normalisation correct |
-| `check:ui`                    | the app driven in jsdom: Add, filter, type, submit           |
-
-`check:ui` is the interesting one — it renders the real `<App />` into a jsdom
-document and clicks through it:
-
-```
-PASS  one dish -> 420.00 ETB
-PASS  same dish twice -> 840.00 ETB
-PASS  total survives filtering
-PASS  empty state shown
-PASS  still disabled on invalid number
-PASS  enabled once name + phone + area valid
-PASS  receipt has the +251 number
-PASS  dish counts reset too
-```
-
-42 checks in total, all passing. Every script exits non-zero on failure, so
-they drop into CI unchanged.
-
-> **Note on React 19** (carried over from Day 27): React 19 no longer validates
-> `propTypes` or reads `defaultProps` on function components, so
-> `src/lib/checkProps.js` runs `PropTypes.checkPropTypes` explicitly behind an
-> `import.meta.env.DEV` guard. `package.json` also pins `react-is` to v19 via
-> `overrides`, because `prop-types@15` ships `react-is@16`, which does not
-> recognise React 19 elements and makes `PropTypes.node` reject valid children.
 
 ---
 
@@ -291,32 +143,43 @@ they drop into CI unchanged.
 
 ```
 addis-eats/
-├── docker-compose.yml         dev (5175) + prod (8088), project addis-eats-day28
-├── Dockerfile                 deps → dev / build → prod (nginx)
+├── public/
+│   └── dishes.json            mock API endpoint — 10 dishes
 ├── scripts/
-│   ├── check-proptypes.mjs    console.error assertions
-│   ├── check-telebirr.mjs     phone rules
-│   └── check-interactions.mjs jsdom click-through
+│   ├── check-proptypes.mjs    PropTypes smoke test
+│   └── check-telebirr.mjs     phone validation unit checks
 └── src/
-    ├── App.jsx                order total, receipt, clear-via-key
+    ├── main.jsx               BrowserRouter + AuthProvider + CartProvider
+    ├── App.jsx                route table only
     ├── index.css
+    ├── api.js                 loadDishes — fetch + res.ok check
+    ├── context/
+    │   ├── CartContext.jsx    cart state shared across all routes
+    │   └── AuthContext.jsx    mock sign-in / sign-out
+    ├── pages/
+    │   ├── Landing.jsx        /
+    │   ├── MenuPage.jsx       /menu  — useSearchParams for category
+    │   ├── DishPage.jsx       /menu/:id  — useParams
+    │   ├── CheckoutPage.jsx   /checkout  — guarded
+    │   ├── SignIn.jsx         /signin  — redirect-back pattern
+    │   └── NotFound.jsx       *
     ├── components/
-    │   ├── Menu.jsx           owns the category state
-    │   ├── CategoryBar.jsx    chips from an array, selected one highlighted
-    │   ├── DishList.jsx       maps dishes, or shows the empty state
-    │   ├── Dish.jsx           count state + Add button
-    │   ├── OrderSummary.jsx   running total in ETB
-    │   ├── DeliveryForm.jsx   one state object + validation
+    │   ├── Layout.jsx         header + nav + Outlet
+    │   ├── RequireAuth.jsx    auth guard
+    │   ├── CategoryBar.jsx    filter chips — controlled
+    │   ├── DishList.jsx       maps dishes → Dish, or EmptyState
+    │   ├── Dish.jsx           dish card with Link to /menu/:id
+    │   ├── OrderSummary.jsx   running total
+    │   ├── DeliveryForm.jsx   controlled form + TeleBirr validation
     │   ├── Receipt.jsx        post-checkout confirmation
     │   ├── EmptyState.jsx
-    │   ├── Header.jsx
-    │   └── Card.jsx           wrapper that renders children
+    │   ├── Card.jsx
+    │   └── Header.jsx
     ├── lib/
     │   ├── telebirr.js        normalise / validate / toInternational
     │   ├── format.js          formatEtb
     │   └── checkProps.js      dev-only PropTypes runner
     └── data/
-        ├── menu.js            10 dishes + derived categories
         └── areas.js           delivery areas
 ```
 
@@ -324,15 +187,20 @@ addis-eats/
 
 ## Troubleshooting
 
-**Add does nothing / total stays 0** — `Dish` must call both `setCount` and
-`onAdd(price)`; `onAdd` has to be threaded `App → Menu → DishList → Dish`.
+**Checkout redirects to `/signin` even when signed in** — make sure
+`AuthProvider` wraps the app above `BrowserRouter` in `main.jsx`.
 
-**Counts do not reset on "Clear order"** — the `key={menuVersion}` on `<Menu />`
-is what discards the dishes' local state.
+**Cart empties on navigation** — `CartProvider` must be above `<App />` (and
+therefore above `<Routes>`), not inside a page component.
 
-**Pay button never enables** — you need a dish in the order *and* all three
-fields valid. Run `npm run check:phone` to see which formats are accepted.
+**`?category=` not reflected in chips** — `CategoryBar` must receive `selected`
+from `searchParams.get('category')`, not from a separate `useState`.
 
-**`port is already allocated`** — Day 26 uses 5173/8086, Day 27 uses 5174/8087,
-Day 28 uses 5175/8088. Change the left-hand side of the mapping in
-`docker-compose.yml` if something else holds one.
+**`/menu/doro-wat` shows "No dish found"** — the id in the URL must match the
+`id` field in `dishes.json` exactly.
+
+> **Note on React 19:** React 19 no longer validates `propTypes` on function
+> components, so `src/lib/checkProps.js` runs `PropTypes.checkPropTypes`
+> explicitly behind an `import.meta.env.DEV` guard. `package.json` pins
+> `react-is` to v19 via `overrides` because `prop-types@15` ships
+> `react-is@16`, which does not recognise React 19 elements.
