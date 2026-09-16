@@ -1,0 +1,58 @@
+const resources = [
+  {
+    id: 1,
+    category: "Library",
+    icon: "📚",
+    title: "University Library",
+    description: "Access thousands of books, journals, and digital resources. Available 24/7 online.",
+    link: "https://library.university.edu",
+    items: ["E-Books & Journals", "Research Databases", "Study Rooms Booking", "Interlibrary Loans"],
+  },
+  {
+    id: 2,
+    category: "Academic Support",
+    icon: "🎓",
+    title: "Academic Support Center",
+    description: "Free tutoring, writing assistance, and academic coaching for all students.",
+    link: "https://academic.university.edu",
+    items: ["Free Tutoring", "Writing Center", "Math Lab", "Study Skills Workshops"],
+  },
+  {
+    id: 3,
+    category: "Career Services",
+    icon: "💼",
+    title: "Career Development Office",
+    description: "Resume reviews, mock interviews, job postings, and internship opportunities.",
+    link: "https://careers.university.edu",
+    items: ["Resume & Cover Letter Help", "Mock Interviews", "Job Board", "Internship Placements"],
+  },
+  {
+    id: 4,
+    category: "Student Services",
+    icon: "🏥",
+    title: "Student Wellness Center",
+    description: "Mental health counseling, health services, and wellness programs.",
+    link: "https://wellness.university.edu",
+    items: ["Counseling Services", "Health Clinic", "Wellness Workshops", "Crisis Support"],
+  },
+  {
+    id: 5,
+    category: "Student Services",
+    icon: "🏠",
+    title: "Housing & Dining",
+    description: "On-campus housing applications, dining plans, and residential life information.",
+    link: "https://housing.university.edu",
+    items: ["Housing Applications", "Dining Plans", "Residential Life", "Maintenance Requests"],
+  },
+  {
+    id: 6,
+    category: "Academic Support",
+    icon: "💻",
+    title: "IT Help Desk",
+    description: "Technical support for students — software, hardware, and campus network access.",
+    link: "https://it.university.edu",
+    items: ["Software Licenses", "Campus Wi-Fi", "Device Support", "Online Learning Tools"],
+  },
+];
+
+export default resources;
