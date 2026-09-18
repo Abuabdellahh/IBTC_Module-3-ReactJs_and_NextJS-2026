@@ -379,6 +379,16 @@ body {
   color: var(--muted);
 }
 
+.delivery__server-error {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(240, 138, 108, 0.45);
+  background: rgba(240, 138, 108, 0.08);
+  font-size: 0.85rem;
+  color: var(--heat);
+}
+
 /* ---------- Receipt ---------- */
 .receipt {
   margin-top: 1.5rem;

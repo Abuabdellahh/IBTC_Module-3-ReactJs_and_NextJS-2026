@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { placeOrder as apiPlaceOrder } from '../api'
 import OrderSummary from '../components/OrderSummary'
 import DeliveryForm from '../components/DeliveryForm'
 import Receipt from '../components/Receipt'
@@ -12,8 +13,10 @@ export default function CheckoutPage() {
   const [receipt, setReceipt] = useState(null)
   const navigate = useNavigate()
 
-  const placeOrder = (details) => {
-    setReceipt(details)
+  // onSubmit is async: throws on failure so DeliveryForm can handle the error
+  const handleSubmit = async (details) => {
+    const confirmed = await apiPlaceOrder(details)
+    setReceipt(confirmed)
     clearCart()
   }
 
@@ -32,7 +35,7 @@ export default function CheckoutPage() {
         <DeliveryForm
           orderTotal={cart.total}
           itemCount={cart.items}
-          onSubmit={placeOrder}
+          onSubmit={handleSubmit}
           defaultName={user?.name ?? ''}
         />
       )}

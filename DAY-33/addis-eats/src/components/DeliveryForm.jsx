@@ -1,16 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import PropTypes from 'prop-types'
 import { checkProps } from '../lib/checkProps'
 import { isValidTelebirr, toInternational } from '../lib/telebirr'
+import { formatEtb } from '../lib/format'
 import { areas } from '../data/areas'
 import Card from './Card'
 
-const EMPTY_FORM = { name: '', phone: '', area: '' }
+const EMPTY_FORM = { name: '', phone: '', area: '', notes: '' }
 
 /**
- * Pure validation: form values in, errors out. Keeping it outside the
- * component means the rules can be read — and tested — on their own, and the
- * component never has to store an `errors` state that could go stale.
+ * Pure validation: form values in, errors out.
+ * Notes is optional — no rule for it.
  */
 function validate({ name, phone, area }) {
   const errors = {}
@@ -28,57 +28,67 @@ function validate({ name, phone, area }) {
   return errors
 }
 
-/**
- * Controlled delivery form.
- *
- * Every input reads its value from `form` and writes back through
- * `handleChange` — React state is the single source of truth, and the DOM only
- * reflects it. One state object plus one handler keyed by the input's `name`
- * scales to a fourth field without a fourth `useState`.
- */
 export default function DeliveryForm(props) {
   checkProps(DeliveryForm, props)
-  const { orderTotal, itemCount, onSubmit } = props
+  const { orderTotal, itemCount, onSubmit, defaultName } = props
 
-  const [form, setForm] = useState(EMPTY_FORM)
-  // Which fields the user has left — so errors appear on blur, not while they
-  // are still halfway through typing their phone number.
+  const [form, setForm] = useState({ ...EMPTY_FORM, name: defaultName ?? '' })
   const [touched, setTouched] = useState({})
+  const [submitting, setSubmitting] = useState(false)
+  const [serverError, setServerError] = useState(null)
+
+  // Refs for focusing the first bad field on a failed request
+  const fieldRefs = {
+    name: useRef(null),
+    phone: useRef(null),
+    area: useRef(null),
+  }
 
   const errors = validate(form)
   const isValid = Object.keys(errors).length === 0
   const hasOrder = itemCount > 0
 
-  const handleChange = (event) => {
-    const { name, value } = event.target
-    // Copy the object rather than mutating it: React compares by reference and
-    // would skip the re-render if we edited `form` in place.
-    setForm((current) => ({ ...current, [name]: value }))
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm((c) => ({ ...c, [name]: value }))
   }
 
-  const handleBlur = (event) => {
-    const { name } = event.target
-    setTouched((current) => ({ ...current, [name]: true }))
+  const handleBlur = (e) => {
+    const { name } = e.target
+    setTouched((c) => ({ ...c, [name]: true }))
   }
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    if (!isValid || !hasOrder) return
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!isValid || !hasOrder || submitting) return
 
-    onSubmit({
-      name: form.name.trim(),
-      // Hand on the canonical +2519… form, never the raw input.
-      phone: toInternational(form.phone),
-      area: form.area,
-      total: orderTotal,
-      items: itemCount,
-    })
+    setSubmitting(true)
+    setServerError(null)
 
-    setForm(EMPTY_FORM)
-    setTouched({})
+    try {
+      await onSubmit({
+        name: form.name.trim(),
+        phone: toInternational(form.phone),
+        area: form.area,
+        notes: form.notes.trim(),
+        total: orderTotal,
+        items: itemCount,
+      })
+      setForm(EMPTY_FORM)
+      setTouched({})
+    } catch (err) {
+      setServerError(err.message)
+      // Focus the first bad field so keyboard/screen-reader users land somewhere useful
+      const firstBadField = ['name', 'phone', 'area'].find((f) => errors[f])
+      if (firstBadField) {
+        setTouched({ name: true, phone: true, area: true })
+        fieldRefs[firstBadField]?.current?.focus()
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  /** Show an error only once the field has been visited. */
   const errorFor = (field) => (touched[field] ? errors[field] : undefined)
 
   return (
@@ -88,9 +98,16 @@ export default function DeliveryForm(props) {
         We confirm every order over TeleBirr before the rider leaves.
       </p>
 
+      {serverError && (
+        <p className="delivery__server-error" role="alert">
+          {serverError}
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} noValidate>
         <Field label="Name" error={errorFor('name')} htmlFor="name">
           <input
+            ref={fieldRefs.name}
             id="name"
             name="name"
             type="text"
@@ -100,11 +117,13 @@ export default function DeliveryForm(props) {
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={Boolean(errorFor('name'))}
+            aria-describedby={errorFor('name') ? 'name-error' : undefined}
           />
         </Field>
 
         <Field label="TeleBirr number" error={errorFor('phone')} htmlFor="phone">
           <input
+            ref={fieldRefs.phone}
             id="phone"
             name="phone"
             type="tel"
@@ -115,37 +134,55 @@ export default function DeliveryForm(props) {
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={Boolean(errorFor('phone'))}
+            aria-describedby={errorFor('phone') ? 'phone-error' : undefined}
           />
         </Field>
 
-        <Field label="Area" error={errorFor('area')} htmlFor="area">
+        <Field label="Delivery area" error={errorFor('area')} htmlFor="area">
           <select
+            ref={fieldRefs.area}
             id="area"
             name="area"
             value={form.area}
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={Boolean(errorFor('area'))}
+            aria-describedby={errorFor('area') ? 'area-error' : undefined}
           >
             <option value="">Select an area…</option>
-            {areas.map((area) => (
-              <option key={area} value={area}>
-                {area}
+            {areas.map((a) => (
+              <option key={a} value={a}>
+                {a}
               </option>
             ))}
           </select>
         </Field>
 
-        <button type="submit" className="delivery__submit" disabled={!isValid || !hasOrder}>
-          Pay with TeleBirr
+        <Field label="Notes (optional)" htmlFor="notes">
+          <input
+            id="notes"
+            name="notes"
+            type="text"
+            placeholder="Gate code, landmark, allergies…"
+            value={form.notes}
+            onChange={handleChange}
+          />
+        </Field>
+
+        <button
+          type="submit"
+          className="delivery__submit"
+          disabled={!isValid || !hasOrder || submitting}
+        >
+          {submitting
+            ? 'Placing order…'
+            : `Pay ${formatEtb(orderTotal)} with TeleBirr`}
         </button>
 
-        {/* Say *why* the button is dead — a disabled control with no
-            explanation is a dead end for the user. */}
         {!hasOrder && (
           <p className="delivery__blocked">Add a dish to the order first.</p>
         )}
-        {hasOrder && !isValid && (
+        {hasOrder && !isValid && !submitting && (
           <p className="delivery__blocked">
             Fill in your name, a valid TeleBirr number and an area.
           </p>
@@ -159,13 +196,10 @@ DeliveryForm.propTypes = {
   orderTotal: PropTypes.number.isRequired,
   itemCount: PropTypes.number.isRequired,
   onSubmit: PropTypes.func.isRequired,
+  defaultName: PropTypes.string,
 }
 
-/** Label + control + error message, so the three inputs stay consistent. */
-function Field(props) {
-  checkProps(Field, props)
-  const { label, htmlFor, error, children } = props
-
+function Field({ label, htmlFor, error, children }) {
   return (
     <div className={error ? 'field field--invalid' : 'field'}>
       <label className="field__label" htmlFor={htmlFor}>
@@ -173,7 +207,7 @@ function Field(props) {
       </label>
       {children}
       {error && (
-        <p className="field__error" role="alert">
+        <p id={`${htmlFor}-error`} className="field__error" role="alert">
           {error}
         </p>
       )}

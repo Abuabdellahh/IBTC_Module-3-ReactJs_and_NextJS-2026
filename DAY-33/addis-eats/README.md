@@ -1,37 +1,137 @@
-# Addis Eats — Day 31
+# Addis Eats — Day 33
 
-React Router. The Day 29 single-page app is split across real URLs: a shared
-layout, a menu page, a page per dish, the category filter in the query string,
-a cart that survives navigation, and a checkout behind a sign-in guard.
+Controlled checkout form. The delivery form gains a fourth field (notes),
+async submission with a submitting flag, full accessibility wiring, and
+graceful error recovery when the payment request fails.
 
-- **`BrowserRouter` + route table in `App`** — every screen is a `<Route>`
-- **`Layout`** with header, nav and `<Outlet>` wraps every screen
-- **`/menu`** fetches dishes; category lives in `?category=` via `useSearchParams`
-- **`/menu/:id`** reads the id with `useParams` and shows one dish
-- **`/checkout`** is guarded by `RequireAuth` — unauthenticated users are sent
-  to `/signin` and returned after signing in
-- **`CartContext`** keeps the order alive across navigation
-- **`AuthContext`** holds the mock sign-in state
-- **`*`** catch-all renders a 404 page
+- **Four fields, one state object** — `{ name, phone, area, notes }` via a
+  single `useState`; one `handleChange` keyed by `name` scales to any number
+  of fields
+- **`validate(form)` is a pure function** — errors are derived on every render,
+  never stored; the function lives outside the component so it can be read and
+  tested in isolation
+- **Blur-gated errors** — `touched` tracks which fields have been left;
+  `errorFor(field)` returns the message only after the user has visited that
+  field, so errors never flash while someone is still typing
+- **Full accessibility** — every control has a `<label>`, `aria-invalid`,
+  `aria-describedby` pointing to its stamped error `<p id="…-error">`, and
+  `role="alert"` on each error paragraph
+- **`submitting` flag** — set before the `await`, cleared in `finally`;
+  the button is `disabled` while true, preventing double-sends; the label
+  shows `Pay {ETB total} with TeleBirr` at rest and `Placing order…` in flight
+- **Failed-request recovery** — a `role="alert"` server-error banner explains
+  what went wrong; all field values are preserved; the first invalid field
+  receives focus so keyboard and screen-reader users land somewhere actionable
+- **`placeOrder` in `api.js`** — simulates a 900 ms round-trip and randomly
+  throws ~20 % of the time so the error path is exercisable without a real
+  backend
 
 ---
 
 ## Quick start
 
 ```bash
-cd DAY-31/addis-eats
+cd DAY-33/addis-eats
 npm install
 npm run dev          # http://localhost:5173
 ```
 
-| Task               | Command                                         | URL                   |
-| ------------------ | ----------------------------------------------- | --------------------- |
-| Dev server (HMR)   | `npm run dev`                                   | http://localhost:5173 |
-| Production build   | `npm run build`                                 | —                     |
-| Preview build      | `npm run preview`                               | http://localhost:4173 |
-| PropTypes check    | `npm run check:props`                           | —                     |
-| Phone check        | `npm run check:phone`                           | —                     |
-| All checks         | `npm run check`                                 | —                     |
+| Task             | Command               | URL                   |
+| ---------------- | --------------------- | --------------------- |
+| Dev server (HMR) | `npm run dev`         | http://localhost:5173 |
+| Production build | `npm run build`       | —                     |
+| Preview build    | `npm run preview`     | http://localhost:4173 |
+| PropTypes check  | `npm run check:props` | —                     |
+| Phone check      | `npm run check:phone` | —                     |
+| All checks       | `npm run check`       | —                     |
+
+---
+
+## Checkout form design
+
+### One state object
+
+```jsx
+const EMPTY_FORM = { name: '', phone: '', area: '', notes: '' }
+const [form, setForm] = useState({ ...EMPTY_FORM, name: defaultName ?? '' })
+
+const handleChange = (e) => {
+  const { name, value } = e.target
+  setForm((c) => ({ ...c, [name]: value }))
+}
+```
+
+A single handler works for every input because each one carries its own `name`
+attribute. Adding a fifth field requires zero changes to the handler.
+
+### Pure validation
+
+```jsx
+function validate({ name, phone, area }) {
+  const errors = {}
+  if (name.trim().length < 2) errors.name = 'Enter the name we should ask for at the door.'
+  if (!isValidTelebirr(phone)) errors.phone = 'TeleBirr numbers look like 0912 345 678 or +251912345678.'
+  if (!area) errors.area = 'Choose a delivery area.'
+  return errors
+}
+
+// Inside the component — derived, never stored:
+const errors = validate(form)
+const isValid = Object.keys(errors).length === 0
+```
+
+### Blur-gated errors
+
+```jsx
+const [touched, setTouched] = useState({})
+
+const handleBlur = (e) => setTouched((c) => ({ ...c, [e.target.name]: true }))
+
+const errorFor = (field) => (touched[field] ? errors[field] : undefined)
+```
+
+### Accessibility wiring
+
+```jsx
+<label htmlFor="phone">TeleBirr number</label>
+<input
+  id="phone"
+  name="phone"
+  aria-invalid={Boolean(errorFor('phone'))}
+  aria-describedby={errorFor('phone') ? 'phone-error' : undefined}
+  ...
+/>
+{errorFor('phone') && (
+  <p id="phone-error" role="alert">{errorFor('phone')}</p>
+)}
+```
+
+### Submitting flag + ETB total in button
+
+```jsx
+const [submitting, setSubmitting] = useState(false)
+
+<button type="submit" disabled={!isValid || !hasOrder || submitting}>
+  {submitting ? 'Placing order…' : `Pay ${formatEtb(orderTotal)} with TeleBirr`}
+</button>
+```
+
+### Failed-request recovery
+
+```jsx
+try {
+  await onSubmit({ ... })
+  setForm(EMPTY_FORM)
+  setTouched({})
+} catch (err) {
+  setServerError(err.message)           // banner with role="alert"
+  setTouched({ name: true, phone: true, area: true })
+  const firstBad = ['name', 'phone', 'area'].find((f) => errors[f])
+  if (firstBad) fieldRefs[firstBad].current?.focus()
+} finally {
+  setSubmitting(false)
+}
+```
 
 ---
 
@@ -44,97 +144,6 @@ npm run dev          # http://localhost:5173
 /checkout           CheckoutPage    guarded — requires sign-in
 /signin             SignIn          signs in and redirects back to intended page
 *                   NotFound        404 catch-all
-```
-
-All routes are nested inside `Layout`, which renders the shared header, nav
-and `<Outlet />`.
-
----
-
-## How the cart survives navigation
-
-`CartContext` wraps the whole app in `main.jsx`. Any component can call
-`useCart()` to read `{ cart, addToCart, clearCart }` — the values never reset
-when the URL changes because the context lives above the router.
-
-```jsx
-// main.jsx
-<BrowserRouter>
-  <AuthProvider>
-    <CartProvider>
-      <App />
-    </CartProvider>
-  </AuthProvider>
-</BrowserRouter>
-```
-
-The nav badge updates live:
-
-```jsx
-<NavLink to="/checkout">
-  Checkout {cart.items > 0 && <span className="nav__badge">{cart.items}</span>}
-</NavLink>
-```
-
----
-
-## Category filter in the query string
-
-`MenuPage` reads and writes `?category=` with `useSearchParams` instead of
-`useState`. The filter is now part of the URL — shareable, bookmarkable, and
-the browser back button works.
-
-```jsx
-const [searchParams, setSearchParams] = useSearchParams()
-const category = searchParams.get('category') ?? 'All'
-
-const setCategory = (value) => {
-  setSearchParams(value === 'All' ? {} : { category: value })
-}
-```
-
-The fetch effect re-runs when `category` changes (it is in the dependency
-array), and the `AbortController` cleanup cancels the previous request.
-
----
-
-## `menu/:id` and `useParams`
-
-Each dish name in the list is a `<Link to={`/menu/${id}`}>`. `DishPage` reads
-the id and finds the matching dish:
-
-```jsx
-const { id } = useParams()
-
-loadDishes(signal).then((all) => {
-  const found = all.find((d) => d.id === id)
-  if (!found) throw new Error(`No dish found with id "${id}"`)
-  setDish(found)
-})
-```
-
----
-
-## `RequireAuth` and the redirect-back pattern
-
-```jsx
-// RequireAuth.jsx
-const { user } = useAuth()
-const location = useLocation()
-
-if (!user) {
-  return <Navigate to="/signin" state={{ from: location }} replace />
-}
-return children
-```
-
-`SignIn` reads `location.state.from` and navigates there after a successful
-sign-in, so the user lands exactly where they were trying to go:
-
-```jsx
-const from = location.state?.from?.pathname ?? '/menu'
-signIn(name.trim())
-navigate(from, { replace: true })
 ```
 
 ---
@@ -152,7 +161,7 @@ addis-eats/
     ├── main.jsx               BrowserRouter + AuthProvider + CartProvider
     ├── App.jsx                route table only
     ├── index.css
-    ├── api.js                 loadDishes — fetch + res.ok check
+    ├── api.js                 loadDishes + placeOrder (simulated async)
     ├── context/
     │   ├── CartContext.jsx    cart state shared across all routes
     │   └── AuthContext.jsx    mock sign-in / sign-out
@@ -160,7 +169,7 @@ addis-eats/
     │   ├── Landing.jsx        /
     │   ├── MenuPage.jsx       /menu  — useSearchParams for category
     │   ├── DishPage.jsx       /menu/:id  — useParams
-    │   ├── CheckoutPage.jsx   /checkout  — guarded
+    │   ├── CheckoutPage.jsx   /checkout  — async submit, error propagation
     │   ├── SignIn.jsx         /signin  — redirect-back pattern
     │   └── NotFound.jsx       *
     ├── components/
@@ -170,7 +179,7 @@ addis-eats/
     │   ├── DishList.jsx       maps dishes → Dish, or EmptyState
     │   ├── Dish.jsx           dish card with Link to /menu/:id
     │   ├── OrderSummary.jsx   running total
-    │   ├── DeliveryForm.jsx   controlled form + TeleBirr validation
+    │   ├── DeliveryForm.jsx   4-field form, pure validate, submitting flag
     │   ├── Receipt.jsx        post-checkout confirmation
     │   ├── EmptyState.jsx
     │   ├── Card.jsx
@@ -193,11 +202,12 @@ addis-eats/
 **Cart empties on navigation** — `CartProvider` must be above `<App />` (and
 therefore above `<Routes>`), not inside a page component.
 
-**`?category=` not reflected in chips** — `CategoryBar` must receive `selected`
-from `searchParams.get('category')`, not from a separate `useState`.
+**Button stays disabled after filling all fields** — check that `itemCount`
+is greater than 0; the button requires both a valid form and a non-empty cart.
 
-**`/menu/doro-wat` shows "No dish found"** — the id in the URL must match the
-`id` field in `dishes.json` exactly.
+**Error banner appears but focus does not move** — confirm that `fieldRefs`
+refs are attached to the actual `<input>`/`<select>` elements via the `ref`
+prop, not to the wrapper `<div>`.
 
 > **Note on React 19:** React 19 no longer validates `propTypes` on function
 > components, so `src/lib/checkProps.js` runs `PropTypes.checkPropTypes`
