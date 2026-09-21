@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+# Install Chromium and its dependencies
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Tell Puppeteer to skip downloading its own Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+WORKDIR /app
+
+# Install puppeteer (library only, no bundled browser)
+RUN npm install puppeteer
+
+COPY docs/ /docs/
+
+CMD ["node", "/docs/screenshot.mjs"]

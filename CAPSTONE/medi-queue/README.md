@@ -69,13 +69,13 @@ Clinics, on the other hand, have **no digital record** of appointments and strug
 
 ## 📸 Screenshots
 
-| Screen | Preview |
+| Home | Doctors | Doctor Detail |
+|---|---|---|
+| ![Home](docs/home.png) | ![Doctors](docs/doctors.png) | ![Doctor Detail](docs/detail.png) |
+
+| Appointments | Login |
 |---|---|
-| 🏠 Home | [docs/home.html](docs/home.html) |
-| 👨‍⚕️ Doctors | [docs/doctors.html](docs/doctors.html) |
-| 🩺 Doctor Detail | [docs/detail.html](docs/detail.html) |
-| 📅 Appointments | [docs/appointments.html](docs/appointments.html) |
-| 🔐 Login | [docs/login.html](docs/login.html) |
+| ![Appointments](docs/appointments.png) | ![Login](docs/login.png) |
 
 ---
 
@@ -117,6 +117,7 @@ medi-queue/
 │   ├── App.jsx               # BrowserRouter + all Route definitions
 │   ├── main.jsx              # ReactDOM.createRoot entry point
 │   └── index.css             # Tailwind @tailwind directives
+├── docs/                     # Screenshots (PNG) + HTML previews
 ├── .dockerignore
 ├── .env.example              # Environment variable template
 ├── .gitignore
@@ -158,8 +159,8 @@ medi-queue/
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/<your-username>/medi-queue.git
-cd medi-queue
+git clone https://github.com/Abuabdellahh/IBTC_Module-3-ReactJs_and_NextJS-2026.git
+cd CAPSTONE/medi-queue
 
 # 2. Copy environment variables
 cp .env.example .env
@@ -180,6 +181,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | `npm run dev` | Start Vite dev server with HMR |
 | `npm run build` | Build optimised production bundle |
 | `npm run preview` | Preview the production build locally |
+| `npm run format` | Format all source files with Prettier |
 
 ---
 
