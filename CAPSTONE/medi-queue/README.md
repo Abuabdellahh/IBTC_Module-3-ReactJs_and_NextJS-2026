@@ -69,15 +69,13 @@ Clinics, on the other hand, have **no digital record** of appointments and strug
 
 ## 📸 Screenshots
 
-> _Add screenshots here after first run_
-
-| Home | Doctors | Doctor Detail |
-|---|---|---|
-| ![home](docs/home.png) | ![doctors](docs/doctors.png) | ![detail](docs/detail.png) |
-
-| Appointments | Login |
+| Screen | Preview |
 |---|---|
-| ![appointments](docs/appointments.png) | ![login](docs/login.png) |
+| 🏠 Home | [docs/home.html](docs/home.html) |
+| 👨‍⚕️ Doctors | [docs/doctors.html](docs/doctors.html) |
+| 🩺 Doctor Detail | [docs/detail.html](docs/detail.html) |
+| 📅 Appointments | [docs/appointments.html](docs/appointments.html) |
+| 🔐 Login | [docs/login.html](docs/login.html) |
 
 ---
 
