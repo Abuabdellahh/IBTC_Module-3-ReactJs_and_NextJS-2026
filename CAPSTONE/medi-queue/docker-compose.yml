@@ -1,0 +1,27 @@
+services:
+  # ── Production build served by Nginx ──────────────────────────
+  medi-queue:
+    build:
+      context: .
+      target: production
+    container_name: medi-queue
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
+  # ── Dev server with hot-reload ─────────────────────────────────
+  medi-queue-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: medi-queue-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
+    profiles:
+      - dev

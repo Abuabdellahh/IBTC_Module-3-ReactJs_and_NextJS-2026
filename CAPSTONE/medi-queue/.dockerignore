@@ -1,0 +1,30 @@
+# ── Dependencies (rebuilt inside container) ──────────────────────
+node_modules/
+
+# ── Build output (rebuilt inside container) ──────────────────────
+dist/
+
+# ── Git history ──────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── Environment files ────────────────────────────────────────────
+.env
+.env.*
+
+# ── Editor / IDE ─────────────────────────────────────────────────
+.vscode/
+.idea/
+
+# ── OS generated ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────────────
+*.log
+
+# ── Docs (not needed in image) ───────────────────────────────────
+docs/
+README.md
+CONTRIBUTING.md
+LICENSE
