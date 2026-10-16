@@ -3,28 +3,22 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useCart } from '../menu/CartContext'
+import OrderForm from '../../components/OrderForm'
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart()
-  const [receipt, setReceipt] = useState(null)
-  const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setReceipt({ name, address, total: cart.total, items: cart.items })
-    clearCart()
-  }
-
-  if (receipt) {
+  if (confirmed) {
     return (
       <div className="card receipt">
         <h2 className="receipt__title">Order confirmed 🎉</h2>
         <p className="receipt__body">
-          Thank you, <strong>{receipt.name}</strong>!<br />
-          {receipt.items} {receipt.items === 1 ? 'dish' : 'dishes'} totalling{' '}
-          <strong>{receipt.total} ETB</strong> will be delivered to{' '}
-          <strong>{receipt.address}</strong>.
+          Your order of{' '}
+          <strong>
+            {cart.items} {cart.items === 1 ? 'dish' : 'dishes'}
+          </strong>{' '}
+          is on its way.
         </p>
         <Link href="/menu" className="receipt__dismiss">
           Back to menu
@@ -47,33 +41,12 @@ export default function CheckoutPage() {
           Browse the menu
         </Link>
       ) : (
-        <form onSubmit={handleSubmit}>
-          <div className="field">
-            <label className="field__label" htmlFor="name">Name</label>
-            <input
-              id="name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-            />
-          </div>
-          <div className="field">
-            <label className="field__label" htmlFor="address">Delivery address</label>
-            <input
-              id="address"
-              type="text"
-              required
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Bole, Addis Ababa…"
-            />
-          </div>
-          <button type="submit" className="delivery__submit">
-            Place order
-          </button>
-        </form>
+        <OrderForm
+          onSuccess={() => {
+            clearCart()
+            setConfirmed(true)
+          }}
+        />
       )}
     </div>
   )

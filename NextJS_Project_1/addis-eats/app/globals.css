@@ -146,5 +146,20 @@ body {
 .cart-page__empty { color: var(--muted); text-align: center; padding: 3rem 0; }
 .cart-page__link { display: inline-block; margin-top: 1rem; color: var(--accent); text-decoration: none; font-weight: 600; }
 
-/* Footer */
+/* btn-demo — used in event-handling demo pages */
+.btn-demo {
+  font: inherit;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  cursor: pointer;
+  transition: filter 0.15s;
+  min-height: 44px;
+  min-width: 44px;
+}
+.btn-demo:hover { filter: brightness(1.08); }
+.btn-demo:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .footer { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.8rem; color: var(--faint); }

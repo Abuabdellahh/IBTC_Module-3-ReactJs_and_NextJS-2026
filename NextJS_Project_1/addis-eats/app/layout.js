@@ -4,7 +4,13 @@ import { CartProvider } from './menu/CartContext'
 import CartBadge from './menu/CartBadge'
 
 export const metadata = {
-  title: 'Addis Eats',
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  ),
+  title: {
+    default: 'Addis Eats',
+    template: '%s | Addis Eats',
+  },
   description: 'Home-style Ethiopian cooking · Bole, Addis Ababa',
 }
 
