@@ -5,7 +5,7 @@
 - After sign-in or sign-up, `createSession()` (`lib/session.js`) sets an `ae_session` cookie. Its flags are `httpOnly`, `secure` in production, `sameSite=lax`, and a 7-day expiry.
 - The cookie holds `{ sub, name, role, exp }` plus an **HMAC-SHA256 signature** made with `SESSION_SECRET` (`lib/auth/token.js`). Changing any character, such as the role, breaks the signature. `verifyToken()` then returns `null`, and the request counts as signed out. Signatures are compared in constant time (`lib/auth/token.js:43`).
 - Passwords are stored as **scrypt** hashes with a per-user salt (`lib/auth/password.js`).
-- Sign-up always creates a `customer`, never staff (`lib/db.js:75`).
+- Sign-up always creates a `customer`, never staff (`lib/db.js:119`).
 - Every server file gets the user from `getSession()`. **No action, page or handler accepts a user id or role from the browser.**
 
 ## Three layers, and what each one proves
@@ -75,7 +75,7 @@ npm run build && npm start &                                 # or use the deploy
 BASE_URL=http://localhost:3000 SESSION_SECRET=… npm run verify:attacks
 ```
 
-Last run against the local production build (`next start`): **22 checks, all refused**. The output is in the table below.
+Local production build (`next start`) and the deployed site both pass: **22 checks, all refused**.
 
 | Check | Result |
 | --- | --- |
@@ -87,7 +87,17 @@ Last run against the local production build (`next start`): **22 checks, all ref
 | Abebe → Sara's order: API / page / cancel / advance | 404 / not-found / "Order not found" / "Only kitchen staff" |
 | Sara's order afterwards | still `Placed` |
 
-**Deployed:** _TODO: run `npm run verify:attacks` with `BASE_URL` set to the live URL and paste the last line here._
+**Deployed** (https://addis-eats-capstone-pink.vercel.app, 2026-10-24): **22 checks, all refused.** The action ids for the direct calls were read from the live site's own JavaScript, so the requests reached the real actions.
+
+```
+$ BASE_URL=https://addis-eats-capstone-pink.vercel.app SESSION_SECRET=… npm run verify:attacks
+…
+PASS  cancelOrder(Sara's id) is refused  (HTTP 200)
+PASS  advanceOrder() as a customer is refused  (HTTP 200)
+PASS  Sara's order is still untouched
+
+All attacks refused.
+```
 
 ## Also checked
 

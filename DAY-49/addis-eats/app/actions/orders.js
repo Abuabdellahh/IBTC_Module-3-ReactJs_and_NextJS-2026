@@ -26,7 +26,7 @@ export async function placeOrder(_prevState, formData) {
     return { errors, values };
   }
 
-  const order = createOrder({ userId: session.userId, ...data }); // owner = session, idempotent on key
+  const order = await createOrder({ userId: session.userId, ...data }); // owner = session, idempotent on key
 
   revalidatePath("/orders");
   revalidatePath("/kitchen");
@@ -39,14 +39,14 @@ export async function cancelOrder(orderId, _prevState, _formData) {
 
   // check 2 — attack 2 (someone else's order) stops here: the lookup is scoped
   // to session.userId, so another customer's order is simply "not found".
-  const order = getOrderForUser(String(orderId), session.userId);
+  const order = await getOrderForUser(String(orderId), session.userId);
   if (!order) return { error: "Order not found." };
 
   if (!customerCanCancel(order.status)) {
     return { error: "This order is already being prepared and can no longer be cancelled." };
   }
 
-  setOrderStatus(order.id, "Cancelled");
+  await setOrderStatus(order.id, "Cancelled");
   revalidatePath("/orders");
   revalidatePath(`/orders/${order.id}`);
   revalidatePath("/kitchen");
@@ -60,14 +60,14 @@ export async function advanceOrder(orderId, nextStatus, _prevState, _formData) {
   // check 2 — role from the signed session, not from the UI hiding a button
   if (session.role !== "staff") return { error: "Only kitchen staff can update orders." };
 
-  const order = getOrderById(String(orderId));
+  const order = await getOrderById(String(orderId));
   if (!order) return { error: "Order not found." };
 
   if (!canTransition(order.status, nextStatus)) {
     return { error: `An order that is ${order.status} cannot become ${nextStatus}.` };
   }
 
-  setOrderStatus(order.id, nextStatus);
+  await setOrderStatus(order.id, nextStatus);
   revalidatePath("/kitchen");
   revalidatePath(`/orders/${order.id}`);
   revalidatePath("/orders");

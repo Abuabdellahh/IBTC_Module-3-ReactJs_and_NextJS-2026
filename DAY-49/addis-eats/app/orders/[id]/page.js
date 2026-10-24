@@ -22,7 +22,7 @@ export default async function OrderPage({ params, searchParams }) {
   const { placed } = await searchParams;
   const session = await requireUser(`/orders/${id}`);
 
-  const order = session.role === "staff" ? getOrderById(id) : getOrderForUser(id, session.userId);
+  const order = session.role === "staff" ? await getOrderById(id) : await getOrderForUser(id, session.userId);
   if (!order) notFound();
 
   const justPlaced = placed === "1" && order.userId === session.userId;

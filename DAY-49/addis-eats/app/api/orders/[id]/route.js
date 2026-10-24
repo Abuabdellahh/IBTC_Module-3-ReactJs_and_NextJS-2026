@@ -16,7 +16,7 @@ export async function GET(_request, { params }) {
 
   const { id } = await params;
   const order =
-    session.role === "staff" ? getOrderById(id) : getOrderForUser(id, session.userId);
+    session.role === "staff" ? await getOrderById(id) : await getOrderForUser(id, session.userId);
 
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404, headers: noStore });

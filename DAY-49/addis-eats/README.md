@@ -4,7 +4,7 @@ Order Ethiopian food in Addis Ababa and follow the delivery live. Customers brow
 
 Module 3 capstone · IBT College · Next.js 16 (App Router) · React 19 · Tailwind CSS 4
 
-**Live URL:** _TODO — paste the Vercel production URL here after deploying (see below)_
+**Live URL:** **[addis-eats-capstone-pink.vercel.app](https://addis-eats-capstone-pink.vercel.app)**
 
 ## Try it
 
@@ -64,14 +64,23 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 | --- | --- | --- |
 | `SESSION_SECRET` | **Yes, in production** (32+ chars) | Signs the session cookie. It is server-only, so it must never get the `NEXT_PUBLIC_` prefix. Without it, private pages refuse everyone (the app fails closed). |
 | `NEXT_PUBLIC_SITE_URL` | Optional | The public origin, used for `metadataBase`, `og:image`, the sitemap and robots.txt. On Vercel it falls back to `VERCEL_PROJECT_PRODUCTION_URL`. It is inlined at build time and is public. |
+| `RUNTIME_CACHE_TIMEOUT` | Optional (Vercel) | Milliseconds allowed for a Runtime Cache read or write (default 500). Production uses `2000`. |
 
 ## Deploy (Vercel)
 
-1. Import the repository in Vercel and set **Root Directory** to `DAY-49/addis-eats`.
-2. Add `SESSION_SECRET` (Production and Preview), and optionally `NEXT_PUBLIC_SITE_URL`.
-3. Deploy, then run the battery against the live URL:
-   `BASE_URL=https://<your-app>.vercel.app SESSION_SECRET=<same secret> npm run verify:attacks`
-4. To roll back, promote the previous deployment in Vercel → Deployments → ⋯ → **Promote to Production**.
+The live site is the Vercel project **`addis-eats-capstone`**, deployed from this folder with the Vercel CLI:
+
+```bash
+npx vercel login
+npx vercel link --project addis-eats-capstone
+npx vercel env add SESSION_SECRET production --sensitive   # paste the generated secret
+npx vercel deploy --prod
+```
+
+To deploy from Git instead, import the repository in Vercel and set **Root Directory** to `DAY-49/addis-eats`.
+
+- **Verify** the live site with `BASE_URL=https://addis-eats-capstone-pink.vercel.app SESSION_SECRET=<same secret> npm run verify:attacks`. The last run gave 22 checks, all refused (see [AUTH.md](AUTH.md)).
+- **Roll back** by promoting the previous deployment: Vercel → Deployments → ⋯ → **Promote to Production**, or `npx vercel rollback`.
 
 ## How it is built
 
@@ -83,7 +92,7 @@ app/                 routes; each page is a Server Component unless it says "use
 components/          UI; Client Components only where there is a click, a hook or the browser
 lib/
   auth/              pure, unit-tested: token.js (HMAC cookie), redirect.js, password.js, config.js
-  db.js              data access, scoped by userId (in-memory store; see FUTURE.md)
+  db.js              data access, scoped by userId (Vercel Runtime Cache; memory locally)
   session.js         the only code that reads or writes the session cookie
   menu.js            the catalogue: the single source of names and prices
 proxy.js             layer 1: early redirect for private routes (Next 16's name for middleware)

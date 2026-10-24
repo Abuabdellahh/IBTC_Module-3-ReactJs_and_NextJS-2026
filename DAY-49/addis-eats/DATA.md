@@ -47,4 +47,8 @@ All money uses `Intl.NumberFormat("en-ET", { currency: "ETB" })`, for example **
 
 ## Storage
 
-`lib/db.js` is an in-memory store. It resets when the server restarts and is not shared between serverless instances. That is acceptable for a frontend capstone, and it is the first item in FUTURE.md. Every read goes through functions that take the `userId`, so replacing the store with a database does not touch any page or action.
+`lib/db.js` keeps the users and orders in the **Vercel Runtime Cache** (`getCache()` from `@vercel/functions`). Locally, one process-wide object stands in for it.
+
+**Why, and how it was found:** the first deploy used a plain in-memory object. The live verification run then placed an order and polled `/api/orders/<id>` 20 times: **20 × 404**. On Vercel, the checkout action, the API route and the kitchen page run as separate functions with separate memory, so an order written by one never reached the others. The Runtime Cache is shared by every function in the region and needs no database to provision. After the change, the same test gave **20 × 200**, and the full flow (checkout → kitchen → live status) passes on the live site.
+
+**Its limits** (FUTURE.md #1): it is a cache, so an entry can be evicted, and the read-modify-write can lose an update if two writes land at the same instant. Every read goes through functions that take the `userId`, so replacing it with a real database touches only `lib/db.js`.

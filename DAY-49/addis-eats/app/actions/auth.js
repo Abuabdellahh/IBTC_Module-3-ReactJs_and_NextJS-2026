@@ -14,7 +14,7 @@ export async function signIn(_prevState, formData) {
   const { data, errors } = validateSignIn(formData);
   if (errors) return { errors, values: { email: String(formData.get("email") ?? "") } };
 
-  const user = findUserByEmail(data.email);
+  const user = await findUserByEmail(data.email);
   if (!user || !verifyPassword(data.password, user.passwordHash)) {
     return { errors: { form: "That email and password do not match." }, values: { email: data.email } };
   }
@@ -29,11 +29,11 @@ export async function signUp(_prevState, formData) {
   const values = { name: String(formData.get("name") ?? ""), email: String(formData.get("email") ?? "") };
   if (errors) return { errors, values };
 
-  if (findUserByEmail(data.email)) {
+  if (await findUserByEmail(data.email)) {
     return { errors: { email: "An account with this email already exists. Sign in instead." }, values };
   }
 
-  const user = createUser({
+  const user = await createUser({
     name: data.name,
     email: data.email,
     passwordHash: hashPassword(data.password),

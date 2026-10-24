@@ -34,13 +34,35 @@ const get = (path, cookie) =>
 // that route. Signed out, proxy.js (layer 1) answers first with a redirect;
 // signed in, the request reaches the action and its own checks answer.
 const ACTION_ROUTE = { cancelOrder: `/orders/${SARA_ORDER}`, advanceOrder: "/kitchen" };
-function loadActionIds() {
+// Action ids differ between builds (a local build and Vercel's build do not
+// match), so they are read from the target's own client JavaScript, where
+// each reference is emitted as createServerReference("<id>", …, "<name>").
+// Loading the pages that use the actions needs a session, so this needs
+// SESSION_SECRET; without it, a local `npm run build` manifest is used.
+async function discoverActionIds() {
+  const ids = {};
+  if (SECRET) {
+    const pages = [
+      ["/kitchen", { sub: "usr_kitchen", name: "Kitchen Staff", role: "staff" }],
+      [`/orders/${ABEBE_ORDER}`, { sub: "usr_abebe", name: "Abebe Kebede", role: "customer" }],
+    ];
+    const chunks = new Set();
+    for (const [path, claims] of pages) {
+      const html = await (await get(path, signToken(claims, SECRET, 300))).text();
+      for (const src of html.match(/\/_next\/static\/[^"\\ ]+\.js/g) ?? []) chunks.add(src);
+    }
+    for (const src of chunks) {
+      const js = await (await fetch(`${BASE}${src}`)).text();
+      for (const [, id, name] of js.matchAll(/createServerReference\)\("([0-9a-f]{40,})",[^)]*?"(\w+)"\)/g)) ids[name] = id;
+    }
+    if (Object.keys(ids).length) return ids;
+  }
   const file = new URL("../.next/server/server-reference-manifest.json", import.meta.url);
-  if (!existsSync(file)) return {};
+  if (!existsSync(file)) return ids;
   const manifest = JSON.parse(readFileSync(file, "utf8"));
   return Object.fromEntries(Object.entries(manifest.node ?? {}).map(([id, v]) => [v.exportedName, id]));
 }
-const actionIds = loadActionIds();
+const actionIds = await discoverActionIds();
 
 async function callAction(name, args, cookie) {
   const id = actionIds[name];
@@ -57,6 +79,7 @@ async function callAction(name, args, cookie) {
     },
     body: JSON.stringify(args),
   });
+  if (res.headers.get("x-nextjs-action-not-found")) return null; // id from another build
   return { status: res.status, location: res.headers.get("location") ?? "", body: await res.text() };
 }
 
@@ -78,7 +101,7 @@ const refusedSignedOut = (r) =>
   r.location.includes("/signin") ? "proxy → /signin" : /session has ended/i.test(r.body) ? "action check" : null;
 for (const [name, args] of [["cancelOrder", [SARA_ORDER, {}, null]], ["advanceOrder", [SARA_ORDER, "Delivered", {}, null]]]) {
   const result = await callAction(name, args);
-  if (!result) skip(`${name}() called directly`, "run `npm run build` first so the action id is known");
+  if (!result) skip(`${name}() called directly`, "action id unknown for this build — set SESSION_SECRET, or try it from DevTools");
   else report(Boolean(refusedSignedOut(result)), `${name}() called directly is refused`, `HTTP ${result.status}, ${refusedSignedOut(result) ?? "NOT refused"}`);
 }
 
@@ -120,9 +143,11 @@ if (!SECRET) {
   report(kitchen.includes("Kitchen staff only") && !kitchen.includes("Order queue"), "customer opening /kitchen sees a refusal, no data");
 
   const cancel = await callAction("cancelOrder", [SARA_ORDER, {}, null], abebe);
-  if (cancel && cancel.status !== 404) report(/Order not found/.test(cancel.body), "cancelOrder(Sara's id) is refused", `HTTP ${cancel.status}`);
+  if (!cancel) skip("cancelOrder(Sara's id)", "action id unknown for this build");
+  else report(/Order not found/.test(cancel.body), "cancelOrder(Sara's id) is refused", `HTTP ${cancel.status}`);
   const advance = await callAction("advanceOrder", [SARA_ORDER, "Delivered", {}, null], abebe);
-  if (advance && advance.status !== 404) report(/Only kitchen staff/.test(advance.body), "advanceOrder() as a customer is refused", `HTTP ${advance.status}`);
+  if (!advance) skip("advanceOrder() as a customer", "action id unknown for this build");
+  else report(/Only kitchen staff/.test(advance.body), "advanceOrder() as a customer is refused", `HTTP ${advance.status}`);
   const after = await get(`/api/orders/${SARA_ORDER}`, signToken({ sub: "usr_kitchen", name: "Kitchen", role: "staff" }, SECRET, 300));
   report((await after.json()).status === "Placed", "Sara's order is still untouched");
 }

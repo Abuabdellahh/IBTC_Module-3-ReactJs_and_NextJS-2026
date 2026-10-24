@@ -16,7 +16,7 @@ export const metadata = {
 
 export default async function OrdersPage() {
   const session = await requireUser("/orders");
-  const orders = listOrdersForUser(session.userId);
+  const orders = await listOrdersForUser(session.userId);
 
   return (
     <div className="mx-auto max-w-3xl">

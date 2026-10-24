@@ -12,6 +12,7 @@
     "verify:attacks": "node scripts/verify-attacks.mjs"
   },
   "dependencies": {
+    "@vercel/functions": "^3.10.3",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -26,5 +27,8 @@
   },
   "engines": {
     "node": ">=20.9"
+  },
+  "overrides": {
+    "zod": "^4.6.6"
   }
 }

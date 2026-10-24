@@ -39,7 +39,7 @@ export default async function KitchenPage() {
     );
   }
 
-  const orders = listAllOrders();
+  const orders = await listAllOrders();
   const active = orders.filter((o) => !isFinal(o.status));
   const billable = orders.filter((o) => o.status !== "Cancelled");
   const revenue = billable.reduce((sum, o) => sum + o.total, 0);

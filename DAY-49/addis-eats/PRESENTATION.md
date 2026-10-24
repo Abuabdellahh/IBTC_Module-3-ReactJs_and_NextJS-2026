@@ -1,6 +1,6 @@
 # PRESENTATION.md — The eight minutes
 
-Present from the **deployed URL**, not localhost. Rehearse once, aloud, with a timer.
+Present from the **deployed URL** (https://addis-eats-capstone-pink.vercel.app), not localhost. Rehearse once, aloud, with a timer.
 
 **Before you start:** open these five files in tabs. Open two browser windows: one normal, one private.
 
@@ -21,13 +21,13 @@ Present from the **deployed URL**, not localhost. Rehearse once, aloud, with a t
 | 3–5 | **One decision** | "The root layout doesn't read the cookie." Show the build table: `/menu` static, `/orders` dynamic. Reading cookies in the layout would have made the menu dynamic too, so the account menu is a small client component that asks `/api/session`. |
 | 5–6 | **Three attacks** | Run `npm run verify:attacks` against the live URL, or show it live: (1) a copied cancel request in a private window gets a redirect, `proxy.js:23` / `orders.js:38`; (2) as Abebe, open `/orders/ord_sara_demo` and get not-found, `page.js:25`; (3) `/signin?next=https://example.com` ends up at `/menu`, `redirect.js:13`. |
 | 6–7 | **PERF.md** | CLS 0.172 → 0. Cause: the header's height depended on the width of the account placeholder. Fix: the nav always gets its own row on phones. Performance 91 → 98. |
-| 7–8 | **What was cut** | FUTURE.md #1: the in-memory store resets on restart. A database is Module 5, and it would replace `lib/db.js` only. Then rate limiting and CSP, and why. |
+| 7–8 | **What was cut** | FUTURE.md #1: data lives in Vercel's Runtime Cache, not a database. Tell the story: the first deploy used memory, the live check showed 20 × 404 because Vercel splits routes into separate functions, and the fix touched only `lib/db.js`. A real database is Module 5. Then rate limiting and CSP, and why. |
 
 ## If something goes wrong
 
 - **The site is down:** roll back in Vercel (promote the previous deployment) and say so calmly.
 - **The network fails:** run `npm run build && npm start` locally and say why.
-- **Orders vanished:** the in-memory store reset after a cold start. Say it is FUTURE.md #1 and place a new order.
+- **Orders vanished:** the Runtime Cache evicted the data (the demo accounts re-seed themselves). Say it is FUTURE.md #1 and place a new order.
 
 ## Likely questions
 
