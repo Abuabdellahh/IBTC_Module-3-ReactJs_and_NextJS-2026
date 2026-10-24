@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* Design tokens — every colour in the UI comes from here.
+   Palette: berbere red (brand), turmeric gold (accent), injera neutrals.
+   Text/background pairs are AA contrast or better. */
+@theme {
+  --color-brand-50: #fdf3f1;
+  --color-brand-100: #fbe3de;
+  --color-brand-600: #b3311d;
+  --color-brand-700: #922614;
+  --color-brand-800: #731e10;
+  --color-accent-100: #fdf1d3;
+  --color-accent-500: #d99a1b;
+  --color-ink: #1f1a17;
+  --color-muted: #5f5550;
+  --color-line: #e7dfd8;
+  --color-surface: #ffffff;
+  --color-canvas: #faf7f4;
+  --color-success: #1e6b3a;
+  --color-success-bg: #e5f4ea;
+  --color-danger: #a4261b;
+  --color-danger-bg: #fde8e6;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* One visible focus style for every interactive element (keyboard pass). */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--color-accent-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
